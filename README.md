@@ -3,7 +3,7 @@
 ## Architecture
 
 ```
-portfolio-manager/
+portfolio2.0/
 ├── api/                          # Backend (Flask)
 │   ├── app.py                    # Flask factory & blueprint registration
 │   ├── config.py                 # Constants, DEFAULT_DATA, paths
