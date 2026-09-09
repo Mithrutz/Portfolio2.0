@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="#0d1117"/>
+  <circle cx="128" cy="128" r="120" fill="none" stroke="#f59e0b" stroke-width="6"/>
+
+  <!-- Candlestick chart bars -->
+  <!-- Bar 1 -->
+  <line x1="62" y1="100" x2="62" y2="185" stroke="#ef4444" stroke-width="4"/>
+  <rect x="54" y="115" width="16" height="45" fill="#ef4444" rx="2"/>
+
+  <!-- Bar 2 -->
+  <line x1="98" y1="90" x2="98" y2="170" stroke="#ef4444" stroke-width="4"/>
+  <rect x="90" y="105" width="16" height="40" fill="#ef4444" rx="2"/>
+
+  <!-- Bar 3 -->
+  <line x1="134" y1="75" x2="134" y2="155" stroke="#22c55e" stroke-width="4"/>
+  <rect x="126" y="90" width="16" height="35" fill="#22c55e" rx="2"/>
+
+  <!-- Bar 4 -->
+  <line x1="170" y1="55" x2="170" y2="140" stroke="#22c55e" stroke-width="4"/>
+  <rect x="162" y="70" width="16" height="40" fill="#22c55e" rx="2"/>
+
+  <!-- Bar 5 -->
+  <line x1="206" y1="45" x2="206" y2="120" stroke="#22c55e" stroke-width="4"/>
+  <rect x="198" y="58" width="16" height="35" fill="#22c55e" rx="2"/>
+
+  <!-- Trend line -->
+  <polyline points="62,145 98,128 134,105 170,85 206,68"
+            fill="none" stroke="#f59e0b" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="0"/>
+
+  <!-- Portfolio P letter -->
+  <text x="128" y="230" text-anchor="middle" font-family="Georgia, serif"
+        font-size="22" font-weight="bold" fill="#f59e0b" letter-spacing="2">PORTFOLIO</text>
+</svg>

@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Portfolio Manager",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "FLASK_ENV": "development",
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+  ]
+}

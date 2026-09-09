@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Portfolio Manager</title>
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header>
+  <h1>Portfolio <span>Manager</span></h1>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div class="tabs">
+      <button class="tab on" id="tab-alloc" onclick="setTab('alloc')">📊 Allocation</button>
+      <button class="tab"    id="tab-pnl"     onclick="setTab('pnl')">📈 Profit / Loss</button>
+      <button class="tab"    id="tab-evo"     onclick="setTab('evo')">📉 Evolution</button>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><button class="btn bs" id="btn-refresh" onclick="startRefresh()">🔄 Update prices</button><span id="last-update-label" style="font-size:9px;color:#374151;text-align:center"></span></div>
+    <button class="btn bs" id="btn-save" onclick="saveDate()">💾 Save</button>
+    <button class="drive-badge drive-off" id="drive-badge" onclick="manualDriveSync()" title="Google Drive sync">☁ Drive</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="sb">
+    <div class="sb-h"><h2 id="sb-title">Positions</h2><button class="btn bp bsm" id="sb-add-btn" onclick="openModal()">＋ Add</button></div>
+    <div class="pl" id="pl"></div>
+    <div class="rates">
+      <div class="rt" id="rates-title">Exchange rates</div>
+      <div class="rr">
+        <div class="ri"><label>EUR / USD</label><input id="r-usd" type="number" step="0.0001" onchange="onRate()"/></div>
+        <div class="ri"><label>EUR / RON</label><input id="r-ron" type="number" step="0.001"  onchange="onRate()"/></div>
+      </div>
+    </div>
+  </aside>
+  <main class="content"><div id="cr"></div></main>
+</div>
+
+<!-- Modal -->
+<div class="ov" id="ov">
+  <div class="modal">
+    <h3 id="mt">Add position</h3>
+    <div class="fr"><label>Ticker / Name</label><input class="fi" id="fn" placeholder="ex: AAPL, IS04"/></div>
+    <div class="fr"><label>Category</label>
+      <select class="fs" id="fc" onchange="onCategoryChange()">
+        <option>ETFs</option><option>Stocks</option><option>Bonds</option>
+        <option>Cash</option><option>Crypto</option>
+      </select></div>
+    <div class="fg" style="margin-bottom:12px">
+      <div id="row-qty" class="fr" style="margin-bottom:0"><label>Quantity / Shares</label><input class="fi" id="fq" type="number" step="any" placeholder="ex: 100"/></div>
+      <div class="fr" style="margin-bottom:0"><label>Currency</label>
+        <select class="fs" id="fm"><option value="EUR">EUR €</option><option value="USD">USD $</option><option value="RON">RON lei</option></select></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <div class="fr" style="margin-bottom:0"><label id="label-pret">Current price</label><input class="fi" id="fp" type="number" step="any" placeholder="ex: 150.50"/></div>
+      <div id="row-pmed" class="fr" style="margin-bottom:0"><label>Avg. purchase price</label><input class="fi" id="fpm" type="number" step="any" placeholder="ex: 130.00"/></div>
+    </div>
+        <div class="fg" style="margin-bottom:12px">
+      <div class="fr" style="margin-bottom:0"><label>Region</label>
+        <select class="fs" id="frg">
+          <option value="World">🌍 World</option>
+          <option value="Romania">🇷🇴 Romania</option>
+        </select></div>
+      <div id="add-cash-div" style="display:none;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #1f2937">
+        <input type="checkbox" id="add-from-cash" style="accent-color:#22c55e;width:15px;height:15px"/>
+        <label for="add-from-cash" style="font-size:12px;color:#9ca3af;cursor:pointer">
+          Deduct acquisition cost from Cash
+          <span id="add-cash-info" style="color:#4b5563;display:block;font-size:10px;margin-top:2px">fill in quantity and avg price to see amount</span>
+        </label>
+      </div>
+      <div class="fr" id="row-ticker" style="margin-bottom:0">
+        <label>Stooq Ticker
+          <a href="https://stooq.com/t/" target="_blank" style="color:#4b5563;font-size:10px;text-decoration:none;margin-left:6px">🔍 browse stooq.com</a>
+        </label>
+        <div class="ticker-row">
+          <input class="fi" id="fty" placeholder="ex: brkb.us · snp.ro · eunk.de · is04.uk"/>
+          <button class="btn-test" onclick="testTicker()">▶ Test</button>
+        </div>
+        <div class="stooq-hint">Format: {symbol}.{market} — us/ro/de/uk/fr/jp etc.</div>
+        <div class="ticker-result" id="ticker-result"></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="closeModal()">Cancel</button>
+      <button class="btn bp" onclick="savePos()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ STATE & SIDEBAR (vanilla JS) ═══════════ -->
+
+<!-- ═══════════ REACT CHARTS (no Babel) ═══════════ -->
+
+<!-- Modal refresh preturi -->
+<div class="ov" id="ov-refresh" onclick="ovRefreshCk(event)">
+  <div class="rmodal">
+    <div class="rmodal-hdr">
+      <h3 id="rmodal-title">🔄 Live price update</h3>
+      <button class="btn bs" style="padding:4px 10px;font-size:12px" onclick="closeRefresh()">✕</button>
+    </div>
+    <div class="rmodal-body" id="rmodal-body">
+      <div style="display:flex;align-items:center;gap:10px;color:var(--dim);padding:20px 0">
+        <span class="spin"></span> Fetching prices...
+      </div>
+    </div>
+    <div class="rmodal-ftr">
+      <button class="btn bs" onclick="closeRefresh()">Cancel</button>
+      <button class="btn bp" id="btn-apply" onclick="applyRefresh()" disabled>✓ Apply pricesle selectate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal dividende -->
+<div class="ov" id="ov-div" >
+  <div class="dmodal">
+    <div class="dmodal-hdr">
+      <h3 id="dmodal-title">💰 Dividends</h3>
+      <button class="btn bs" style="padding:4px 10px;font-size:12px" onclick="closeDivModal()">✕</button>
+    </div>
+    <div class="dmodal-body" id="dmodal-body"></div>
+    <div class="dmodal-ftr">
+      <span style="font-size:11px;color:var(--dim)">Add all received dividends toentru această position</span>
+      <button class="btn bp" onclick="closeDivModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Drive save prompt -->
+<div id="drive-save-modal" >
+  <div class="drive-prompt">
+    <div class="drive-prompt-title">☁ Save to Google Drive?</div>
+    <div class="drive-prompt-sub">
+      Date saved locally.<br>
+      Upload to Drive for multi-device sync?
+    </div>
+    <div class="drive-prompt-btns">
+      <button class="btn bs" onclick="closeDriveSavePrompt()" 
+        style="font-size:12px;padding:6px 14px">
+        No, local only
+      </button>
+      <button class="btn bp" onclick="confirmDriveSave()"
+        style="font-size:12px;padding:6px 14px;background:#166534;color:#4ade80;border:1px solid #166534">
+        ☁ Yes, save to Drive
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal vânzare position -->
+<div class="ov" id="ov-sell" >
+  <div class="modal" style="width:440px">
+    <h3 id="sell-title">💸 Sell position</h3>
+    <div id="sell-body">
+      <div class="fr">
+        <label>Quantity to sell</label>
+        <input class="fi" id="sell-qty" type="number" step="any"
+          placeholder="max: —" oninput="updateSellPreview()"/>
+      </div>
+      <div class="fr">
+        <label>Sale price (<span id="sell-currency">—</span>)</label>
+        <input class="fi" id="sell-price" type="number" step="any"
+          placeholder="ex: 150.00" oninput="updateSellPreview()"/>
+      </div>
+      <div class="fr">
+        <label>Sale date</label>
+        <input class="fi" id="sell-date" type="date"/>
+      </div>
+      <!-- Preview calcul -->
+      <div class="sell-preview" id="sell-preview" style="display:none">
+        <div class="sell-preview-item">
+          <div class="sell-preview-label">Gross proceeds</div>
+          <div class="sell-preview-val" id="sell-prev-proceeds">—</div>
+        </div>
+        <div class="sell-preview-item">
+          <div class="sell-preview-label">Purchase cost</div>
+          <div class="sell-preview-val" id="sell-prev-cost">—</div>
+        </div>
+        <div class="sell-preview-item">
+          <div class="sell-preview-label">P&L realizat</div>
+          <div class="sell-preview-val" id="sell-prev-pnl">—</div>
+        </div>
+        <div class="sell-preview-item">
+          <div class="sell-preview-label">Return</div>
+          <div class="sell-preview-val" id="sell-prev-pct">—</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px" id="sell-cash-note"></div>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="closeSellModal()">Cancel</button>
+      <button class="btn bp" style="background:#fb923c;color:#000" onclick="confirmSell()">
+        💸 Confirm sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal cumpărare acțiuni -->
+<div class="ov" id="ov-buy" >
+  <div class="modal" style="width:440px">
+    <h3 id="buy-title">🛒 Buy shares</h3>
+    <div class="fr">
+      <label>Quantity to buy</label>
+      <input class="fi" id="buy-qty" type="number" step="any" placeholder="ex: 10" oninput="updateBuyPreview()"/>
+    </div>
+    <div class="fr">
+      <label>Purchase price (<span id="buy-currency">—</span>)</label>
+      <input class="fi" id="buy-price" type="number" step="any" placeholder="ex: 150.00" oninput="updateBuyPreview()"/>
+    </div>
+    <div class="fr">
+      <label>Transaction date</label>
+      <input class="fi" id="buy-date" type="date"/>
+    </div>
+    <!-- Preview -->
+    <div id="buy-preview" style="background:#0d1117;border-radius:8px;padding:10px 14px;margin:8px 0;display:none;gap:16px;flex-wrap:wrap">
+      <div><div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Total cost</div>
+        <div style="font-family:Georgia,serif;font-size:16px" id="buy-prev-cost">—</div></div>
+      <div><div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">New avg. price</div>
+        <div style="font-family:Georgia,serif;font-size:16px;color:#f59e0b" id="buy-prev-avg">—</div></div>
+      <div><div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Total quantity</div>
+        <div style="font-family:Georgia,serif;font-size:16px" id="buy-prev-qty">—</div></div>
+    </div>
+    <!-- Checkbox cash -->
+    <div style="display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 0;border-top:1px solid #1f2937">
+      <input type="checkbox" id="buy-from-cash" checked style="accent-color:#22c55e;width:15px;height:15px"/>
+      <label for="buy-from-cash" style="font-size:12px;color:#9ca3af;cursor:pointer">
+        Deduct cost from Cash <span id="buy-cash-avail" style="color:#4b5563"></span>
+      </label>
+    </div>
+    <div id="buy-cash-warn" style="font-size:11px;color:#ef4444;display:none">
+      ⚠ Insufficient cash pentru această tranzacție
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="closeBuyModal()">Cancel</button>
+      <button class="btn bp" style="background:#22c55e;color:#000" onclick="confirmBuy()">
+        🛒 Confirm purchase
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cash -->
+<div class="ov" id="ov-cash" >
+  <div class="modal" style="width:380px">
+    <h3 id="cash-title">💵 Cash</h3>
+    <div style="background:#0d1117;border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px" id="cash-balance-label">Current balance</div>
+      <div style="font-family:Georgia,serif;font-size:22px;color:#e6e1d8" id="cash-balance-val">—</div>
+    </div>
+    <div class="fr">
+      <label id="cash-amount-label">Sumă</label>
+      <input class="fi" id="cash-amount" type="number" step="any" placeholder="ex: 1000.00" oninput="updateCashPreview()"/>
+    </div>
+    <div id="cash-preview" style="font-size:12px;color:#9ca3af;margin:6px 0;display:none">
+      New balance: <span id="cash-new-val" style="color:#f59e0b;font-weight:600"></span>
+    </div>
+    <div class="fr">
+      <label>Date</label>
+      <input class="fi" id="cash-date" type="date"/>
+    </div>
+    <div class="mf">
+      <button class="btn bs" onclick="closeCashModal()">Cancel</button>
+      <button class="btn bp" id="cash-confirm-btn" onclick="confirmCash()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update prices confirmation modal -->
+<div id="ov-update-confirm">
+  <div class="update-confirm-box">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <span style="font-size:28px">🔄</span>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#e6e1d8">Update Prices</div>
+        <div style="font-size:11px;color:#6b7280" id="upd-subtitle">Fetching live prices for all positions</div>
+      </div>
+    </div>
+    <div id="upd-last-update" style="background:#0d1117;border-radius:8px;padding:10px 14px;
+      margin-bottom:18px;font-size:12px;color:#6b7280;display:none">
+      <span style="color:#4b5563">Last update:</span>
+      <span id="upd-last-time" style="color:#9ca3af;margin-left:6px"></span>
+    </div>
+    <div id="upd-ticker-count" style="font-size:12px;color:#4b5563;margin-bottom:18px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bs" onclick="closeUpdateConfirm()" 
+        style="font-size:13px">Cancel</button>
+      <button class="btn bp" onclick="confirmAndStartRefresh()"
+        style="background:#f59e0b;color:#000;font-size:13px;font-weight:600">
+        🔄 Update now
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- Libraries -->
+  <!-- App scripts (order matters) -->
+  <!-- React — loaded FIRST (required by all components) -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/state.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/main_vanilla.js"></script>
+  <script src="/js/refresh.js"></script>
+
+  <!-- React Components -->
+  <script src="/js/components/AllocChart.js"></script>
+  <script src="/js/components/PnlChart.js"></script>
+  <script src="/js/components/EvolutionChart.js"></script>
+  <script src="/js/components/CurrencyChart.js"></script>
+
+  <!-- Bootstrap: called LAST after all components are loaded -->
+  <script src="/js/bootstrap.js"></script>
+
+</body>
+</html>
