@@ -5,6 +5,7 @@ function PnlChart(props){
   var data=props.data;
   var animS=React.useState(0);var anim=animS[0];var setAnim=animS[1];
   var hovS=React.useState(null);var hov=hovS[0];var setHov=hovS[1];
+  var detS=React.useState(false);var showReal=detS[0];var setShowReal=detS[1];
   React.useEffect(function(){
     var start=null;setAnim(0);
     function step(ts){if(!start)start=ts;var p=Math.min((ts-start)/900,1);setAnim(p<1?1-Math.pow(1-p,3):1);if(p<1)requestAnimationFrame(step)}
@@ -29,8 +30,13 @@ function PnlChart(props){
   var totVal=poz.reduce(function(s,p){return s+p.ve},0);
   var totDiv=poz.reduce(function(s,p){return s+(p.divEur||0)},0);
   var totPnlFaraDivid=totVal-totCost;
-  var totPnl=totPnlFaraDivid+totDiv;  // include dividende = consistent cu per-pozitie
-  var totPct=totCost>0?totPnl/totCost*100:0;
+  /* Realized gains / losses from closed (sold) transactions, in EUR */
+  var tranz=(data.tranzactii||[]);
+  var totReal=tranz.reduce(function(s,t){return s+toEr(t.profit||0,t.moneda||"EUR",cur)},0);
+  var realCost=tranz.reduce(function(s,t){return s+toEr((t.cantitate||0)*(t.pret_mediu||0),t.moneda||"EUR",cur)},0);
+  var totUnreal=totPnlFaraDivid+totDiv;  // open positions incl. dividends (= sum of per-position P&L)
+  var totPnl=totUnreal+totReal;          // P&L total = unrealized + dividends + realized
+  var totPct=(totCost+realCost)>0?totPnl/(totCost+realCost)*100:0;
 
   var maxAbs=poz.reduce(function(m,p){return Math.max(m,Math.abs(p.pnl))},1);
 
@@ -54,12 +60,15 @@ function PnlChart(props){
       /* banner total */
       h("div",{style:{background:"#111827",border:"1px solid",borderColor:totPnl>=0?"#16a34a55":"#dc262655",borderRadius:12,padding:"14px 18px",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}},
         h("div",null,
-          h("div",{style:{fontSize:10,color:"#6b7280",letterSpacing:".08em",textTransform:"uppercase",marginBottom:3}},"P&L total (excl. cash)"),
+          h("div",{style:{fontSize:10,color:"#6b7280",letterSpacing:".08em",textTransform:"uppercase",marginBottom:3}},"P&L total (excl. cash, incl. realized)"),
           h("div",{style:{display:"flex",alignItems:"baseline",gap:10}},
             h("span",{style:{fontFamily:"Georgia,serif",fontSize:26,color:totPnl>=0?"#22c55e":"#ef4444"}},fsgn(totPnl)),
             h("span",{style:{fontSize:14,color:totPnl>=0?"#16a34a":"#dc2626",fontWeight:600}},fpct(totPct)),
             (function(){var td=poz.reduce(function(s,p){return s+(p.divEur||0)},0);return td>0?h("span",{style:{fontSize:11,color:"#4ade80",marginLeft:6}},"💰 "+new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(td)+" € dividende"):null;})()
-          )
+          ),
+          h("div",{style:{fontSize:11,color:"#6b7280",marginTop:4}},
+            "Unrealized: ",h("span",{style:{color:totUnreal>=0?"#22c55e":"#ef4444"}},fsgn(totUnreal)),
+            " · Realized: ",h("span",{style:{color:totReal>=0?"#22c55e":"#ef4444"}},fsgn(totReal)))
         ),
         h("div",{style:{textAlign:"right"}},
           h("div",{style:{fontSize:10,color:"#6b7280",marginBottom:3}},"Total cost investit"),
@@ -132,6 +141,49 @@ function PnlChart(props){
             )
           })
         )
+      ),
+
+      /* ── Realized Gains / Losses (total + Details) ── */
+      tranz.length>0&&h("div",{style:{background:"#111827",border:"1px solid",
+        borderColor:totReal>=0?"#16a34a44":"#dc262644",borderRadius:12,overflow:"hidden"}},
+        h("div",{style:{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",
+          borderBottom:showReal?"1px solid #161d29":"none"}},
+          h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+            h("span",{style:{fontSize:12,fontWeight:700}},"💸 Realized Gains / Losses"),
+            h("span",{style:{fontSize:10,color:"#6b7280"}},tranz.length+" transactions")
+          ),
+          h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+            h("span",{style:{fontFamily:"Georgia,serif",fontSize:15,color:totReal>=0?"#22c55e":"#ef4444"}},fsgn(totReal)),
+            h("button",{className:"btn bs bsm",onClick:function(){setShowReal(!showReal)}},showReal?"Hide details ▲":"Details ▼")
+          )
+        ),
+        showReal&&h("div",{style:{padding:"8px 16px 12px",display:"flex",flexDirection:"column",gap:8}},
+          tranz.slice().sort(function(a,b){return (b.data||"").localeCompare(a.data||"")}).map(function(t){
+            var isPos=(t.profit||0)>=0;
+            var profEur=toEr(t.profit||0,t.moneda||"EUR",cur);
+            var catColor=(PAL_R[t.categorie]||{main:"#64748b"}).main;
+            return h("div",{key:t.id,style:{background:"#0d1117",borderRadius:8,padding:"10px 12px",
+              borderLeft:"3px solid "+(isPos?"#22c55e":"#ef4444")}},
+              h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:4}},
+                h("div",{style:{display:"flex",alignItems:"center",gap:6}},
+                  h("span",{style:{fontWeight:700,fontSize:13,color:"#e6e1d8"}},t.pozitie_nume),
+                  h("span",{style:{fontSize:9,padding:"1px 6px",borderRadius:4,background:"#1f2937",color:catColor}},t.categorie),
+                  t.data&&h("span",{style:{fontSize:10,color:"#6b7280"}},t.data)
+                ),
+                h("div",{style:{display:"flex",gap:10,alignItems:"baseline"}},
+                  h("span",{style:{fontSize:13,fontFamily:"Georgia,serif",color:isPos?"#22c55e":"#ef4444",fontWeight:600}},
+                    (isPos?"+":"")+new Intl.NumberFormat("en-US",{maximumFractionDigits:2}).format(t.profit||0)+" "+(t.moneda||"EUR")),
+                  (t.moneda||"EUR")!=="EUR"&&h("span",{style:{fontSize:10,color:"#4b5563"}},"("+fsgn(profEur)+")"),
+                  h("span",{style:{fontSize:11,color:isPos?"#16a34a":"#dc2626",minWidth:44,textAlign:"right"}},fpct(t.pct||0))
+                )
+              ),
+              h("div",{style:{fontSize:10,color:"#4b5563",marginTop:4}},
+                new Intl.NumberFormat("en-US",{maximumFractionDigits:4}).format(t.cantitate||0)+" units"+
+                " × "+(t.pret_vanzare||0)+" "+(t.moneda||"")+" (sale price)"+
+                " · avg. cost: "+(t.pret_mediu||0)+" "+(t.moneda||""))
+            );
+          })
+        )
       )
     ),
 
@@ -162,7 +214,11 @@ function PnlChart(props){
           )
         })
       ),
-      h("div",{style:{marginTop:14,paddingTop:10,borderTop:"1px solid #1f2937",display:"flex",justifyContent:"space-between",alignItems:"center"}},
+      tranz.length>0&&h("div",{style:{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+        h("span",{style:{fontSize:10,color:"#6b7280"}},"Realized"),
+        h("span",{style:{fontSize:11,color:totReal>=0?"#22c55e":"#ef4444",fontWeight:600}},fsgn(totReal))
+      ),
+      h("div",{style:{marginTop:tranz.length>0?6:14,paddingTop:10,borderTop:"1px solid #1f2937",display:"flex",justifyContent:"space-between",alignItems:"center"}},
         h("span",{style:{fontSize:10,color:"#6b7280"}},"Total P&L"),
         h("span",{style:{fontFamily:"Georgia,serif",fontSize:15,color:totPnl>=0?"#22c55e":"#ef4444",fontWeight:600}},fsgn(totPnl))
       )

@@ -1,5 +1,18 @@
 /* Portfolio Manager — Sidebar */
 
+/* Open the stock details page in a new window.
+ * Desktop (pywebview): the backend opens a native window.
+ * Browser mode: falls back to a popup / new tab. */
+async function openStockWindow(path, title){
+  try{
+    var r=await fetch("/api/stock/open-window",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({path:path,title:(title?title+" · ":"")+"Stock details"})});
+    var j=await r.json();
+    if(j.opened) return;
+  }catch(e){}
+  window.open(path,"_blank","width=1150,height=820");
+}
+
 function renderSB(){
   var total=ST.pozitii.reduce(function(s,p){return s+pVal(p)},0);
   var el=document.getElementById("pl"); el.innerHTML="";
@@ -66,6 +79,13 @@ function renderSB(){
           '<button class="ib" style="color:#fb923c" onclick="openSellModal('+p.id+')" title="Sell">💸</button>'+
           '<button class="ib e" onclick="openModal('+p.id+')" title="Edit position">✏️</button>'+
           '<button class="ib d" onclick="delPos('+p.id+')" title="Delete position">🗑</button></div>';
+        // Click on the row (not on its action buttons) → stock details window
+        row.classList.add("pr-click");
+        row.title="Click for stock details";
+        row.onclick=(function(pos){return function(e){
+          if(e.target.closest(".pact")) return;
+          openStockWindow("/stock.html?pos="+pos.id, pos.nume);
+        }})(p);
       }
       grp.appendChild(row);
     });

@@ -11,14 +11,20 @@ portfolio2.0/
 │   │   └── portfolio.py          # load_data, save_data, migrate, save_snapshot
 │   ├── services/
 │   │   ├── prices.py             # Stooq, Yahoo Finance, BVB scrapers
-│   │   └── drive.py              # Google Drive sync (DriveSync class)
+│   │   ├── drive.py              # Google Drive sync (DriveSync class)
+│   │   ├── stock_data.py         # Stock research: Yahoo search, 3y history, MA/RSI, fundamentals (SQLite cache)
+│   │   ├── windows.py            # Opens native pywebview windows (desktop mode)
+│   │   └── mode.py               # Demo vs real portfolio (data file, Drive on/off, demo data)
 │   └── routes/
 │       ├── data.py               # /api/data, /api/snapshots
 │       ├── prices.py             # /api/refresh-prices/stream, /api/test-ticker
-│       └── drive.py              # /api/drive/status, /api/drive/sync
+│       ├── drive.py              # /api/drive/status, /api/drive/sync
+│       ├── mode.py               # /api/mode — startup portfolio choice, reset demo
+│       └── stock.py              # /api/stock/* — search, history, info, recent, position, open-window
 │
 ├── frontend/                     # Frontend (HTML + JS + CSS)
 │   ├── index.html                # HTML shell, loads all JS files
+│   ├── stock.html                # Stock details window (click a position or 🔍 Research)
 │   ├── css/
 │   │   └── styles.css            # All styles
 │   └── js/
@@ -36,6 +42,8 @@ portfolio2.0/
 │           └── CurrencyChart.js  # Currency allocation donut (React)
 │
 ├── portfolio_data.json           # Your data (git-ignored)
+├── demo_data.json                # Demo portfolio for presentations (git-ignored, never synced)
+├── stocks.db                     # Cached daily prices for stock research (git-ignored)
 ├── run.py                        # ← Entry point: python run.py
 ├── requirements.txt
 ├── build_windows.bat
@@ -50,3 +58,15 @@ python run.py
 ```
 
 Open http://localhost:5000
+
+## Demo vs. real portfolio
+
+On startup the app asks which portfolio to open:
+
+- **Demo portfolio** — sample positions with a year of history, trades and dividends, for presenting
+  the app. Stored in `demo_data.json`, never synced with Google Drive. "↺ Reset demo data" restores it.
+- **My portfolio** — your real data in `portfolio_data.json`, synced with Google Drive
+  (needs `credentials.json`). The Drive download happens when you pick it.
+
+Switch at any time with the **Demo / My portfolio** pill next to the title.
+

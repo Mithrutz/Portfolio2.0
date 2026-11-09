@@ -7,7 +7,10 @@
 </head>
 <body>
 <header>
-  <h1>Portfolio <span>Manager</span></h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <h1>Portfolio <span>Manager</span></h1>
+    <button class="mode-pill" id="mode-pill" onclick="showModeChooser(true)" title="Switch portfolio" hidden></button>
+  </div>
   <div style="display:flex;gap:8px;align-items:center">
     <div class="tabs">
       <button class="tab on" id="tab-alloc" onclick="setTab('alloc')">📊 Allocation</button>
@@ -15,6 +18,7 @@
       <button class="tab"    id="tab-evo"     onclick="setTab('evo')">📉 Evolution</button>
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><button class="btn bs" id="btn-refresh" onclick="startRefresh()">🔄 Update prices</button><span id="last-update-label" style="font-size:9px;color:#374151;text-align:center"></span></div>
+    <button class="btn bs" id="btn-research" onclick="openStockWindow('/stock.html','')" title="Search any stock">🔍 Research</button>
     <button class="btn bs" id="btn-save" onclick="saveDate()">💾 Save</button>
     <button class="drive-badge drive-off" id="drive-badge" onclick="manualDriveSync()" title="Google Drive sync">☁ Drive</button>
   </div>
@@ -86,6 +90,36 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- Startup: choose portfolio -->
+<div class="ov open" id="ov-mode">
+  <div class="mode-box">
+    <div class="mode-h">
+      <h3>Portfolio <span>Manager</span></h3>
+      <div class="mode-sub">Which portfolio do you want to open?</div>
+    </div>
+    <div class="mode-cards">
+      <button class="mode-card" id="mode-card-demo" onclick="chooseMode('demo')">
+        <div class="mode-ic">🎓</div>
+        <div class="mode-t">Demo portfolio</div>
+        <div class="mode-d">Sample data for presenting the app to others. Stays on this computer and is never synced with Google.</div>
+        <div class="mode-s" id="mode-s-demo"></div>
+      </button>
+      <button class="mode-card" id="mode-card-real" onclick="chooseMode('real')">
+        <div class="mode-ic">☁️</div>
+        <div class="mode-t">My portfolio</div>
+        <div class="mode-d">Your real data, synced with Google Drive.</div>
+        <div class="mode-s" id="mode-s-real"></div>
+      </button>
+    </div>
+    <div class="mode-busy" id="mode-busy" hidden><span class="spin"></span><span id="mode-busy-txt">Loading...</span></div>
+    <div class="mode-f">
+      <button class="mode-link" onclick="resetDemo()" title="Restore the original demo data">↺ Reset demo data</button>
+      <button class="mode-link" id="mode-cancel" onclick="closeModeChooser()" hidden>Cancel</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- ═══════════ STATE & SIDEBAR (vanilla JS) ═══════════ -->
 
@@ -305,6 +339,7 @@
   <script src="/js/sidebar.js"></script>
   <script src="/js/main_vanilla.js"></script>
   <script src="/js/refresh.js"></script>
+  <script src="/js/mode.js"></script>
 
   <!-- React Components -->
   <script src="/js/components/AllocChart.js"></script>

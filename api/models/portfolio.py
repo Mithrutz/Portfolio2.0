@@ -2,27 +2,37 @@
 Portfolio model — data loading, saving, migration and snapshots.
 """
 import os, json
-from api.config import DATA_FILE, DEFAULT_DATA, CAT_MIGRATE
+from api.config import DEFAULT_DATA, CAT_MIGRATE
+from api.services import mode
 
 
 def load_data():
-    """Load portfolio data from JSON, running migration if needed."""
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+    """Load portfolio data for the current mode (demo / real), migrating if needed."""
+    path = mode.data_file()
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         data, changed = migrate(data)
         if changed:
             save_data(data)
         return data
+    if mode.is_demo():
+        data = mode.build_demo_data()
+        save_data(data)
+        return data
+    if mode.get() == mode.REAL:
+        return json.loads(json.dumps(mode.EMPTY_DATA))  # real portfolio starts empty
     return json.loads(json.dumps(DEFAULT_DATA))
 
 
 def save_data(data):
-    """Persist portfolio data to JSON and trigger Drive upload if enabled."""
+    """Persist data for the current mode; the real portfolio is also uploaded to Drive."""
     data.setdefault("snapshots",  [])
     data.setdefault("tranzactii", [])
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
+    with open(mode.data_file(), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    if not mode.uploads_allowed():
+        return  # demo portfolio never leaves this computer (or Drive upload is blocked)
     # Upload to Drive in background (non-blocking)
     try:
         from api.services.drive import get_drive

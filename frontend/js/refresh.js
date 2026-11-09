@@ -631,7 +631,9 @@ async function checkDriveStatus(){
 function updateDriveBadge(){
   var b=document.getElementById("drive-badge"); if(!b) return;
   var s=_driveStatus;
-  if(!s.enabled){b.className="drive-badge drive-off";b.textContent="☁ Drive";
+  if(s.demo){b.className="drive-badge drive-off";b.textContent="☁ Off";
+    b.title="Demo portfolio — Google Drive is off";}
+  else if(!s.enabled){b.className="drive-badge drive-off";b.textContent="☁ Drive";
     b.title="Google Drive neconfigurat — add credentials.json next to .exe";}
   else if(s.error){b.className="drive-badge drive-err";b.textContent="☁ Eroare";
     b.title="Error: "+s.error;}

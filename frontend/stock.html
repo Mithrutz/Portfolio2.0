@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Stock Details · Portfolio Manager</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/stock.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body class="stock-page">
+<header>
+  <h1>Stock <span>Details</span></h1>
+  <div class="sk-search">
+    <input id="search-input" type="text" placeholder="🔍 Search a company (ex: Apple, Tesla)..." autocomplete="off"/>
+    <div id="suggestions"></div>
+  </div>
+</header>
+
+<div class="sk-wrap">
+  <div class="sk-recent" id="recent-wrap">
+    <span class="sk-label">Recent</span>
+    <div id="recent-list"></div>
+  </div>
+
+  <!-- Position (only when opened from the portfolio) -->
+  <section class="sk-card" id="pos-card" hidden>
+    <div class="sk-card-h">
+      <h2 id="pos-title">—</h2>
+      <span class="sk-tag" id="pos-tag"></span>
+    </div>
+    <div class="sk-stats" id="pos-stats"></div>
+  </section>
+
+  <!-- Chart -->
+  <section class="sk-card">
+    <div class="sk-card-h">
+      <h2 id="ticker-title">Choose a stock</h2>
+      <div class="sk-price" id="last-price"></div>
+    </div>
+
+    <div class="sk-stats" id="info-panel"></div>
+
+    <div class="sk-bar" id="period-bar">
+      <button class="sk-btn period-btn" data-period="1m">1M</button>
+      <button class="sk-btn period-btn" data-period="6m">6M</button>
+      <button class="sk-btn period-btn" data-period="1y">1Y</button>
+      <button class="sk-btn period-btn on" data-period="3y">3Y</button>
+      <span class="sk-sep"></span>
+      <button class="sk-btn ind-btn on" data-ind="price"><span class="dot"></span>Price</button>
+      <button class="sk-btn ind-btn" data-ind="avg"><span class="dot"></span>Avg. purchase</button>
+      <button class="sk-btn ind-btn" data-ind="ma"><span class="dot"></span>Moving avg.</button>
+      <button class="sk-btn ind-btn" data-ind="rsi"><span class="dot"></span>RSI</button>
+      <button class="sk-btn ind-btn" data-ind="volume"><span class="dot"></span>Volume</button>
+    </div>
+
+    <div class="sk-ma" id="ma-inputs">
+      <label>Short MA (days) <input id="ma-short-input" type="number" min="2" max="200" value="20"/></label>
+      <label>Long MA (days) <input id="ma-long-input" type="number" min="5" max="400" value="100"/></label>
+      <button class="btn bs bsm" id="apply-ma">Apply</button>
+    </div>
+
+    <div id="chart-container">
+      <canvas id="stock-chart"></canvas>
+      <div id="status">Search and select a company to see the chart.</div>
+    </div>
+    <div id="rsi-container" class="sk-sub"><canvas id="rsi-chart"></canvas></div>
+    <div id="volume-container" class="sk-sub"><canvas id="volume-chart"></canvas></div>
+  </section>
+</div>
+
+<script src="/js/stock.js"></script>
+</body>
+</html>

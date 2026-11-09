@@ -14,5 +14,5 @@
 checkDriveStatus();
 setInterval(checkDriveStatus, 30000);
 
-// Initialize the app — fetches data and renders everything
-init();
+// Ask which portfolio to open (demo / real); that then calls init()
+showModeChooser(false);
