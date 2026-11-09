@@ -4,28 +4,42 @@ Google Drive routes — status, sync and diagnostics.
 import json
 from flask import Blueprint, jsonify, request
 from api.services.drive import get_drive
+from api.services import mode
 
 bp = Blueprint("drive", __name__)
+
+DEMO_STATUS = {"enabled": False, "connected": False, "last_sync": None,
+               "error": None, "file_id": None, "demo": True}
 
 
 @bp.route("/api/drive/status", methods=["GET"])
 def drive_status():
+    if not mode.drive_allowed():
+        return jsonify(DEMO_STATUS)
     return jsonify(get_drive().status())
 
 
 @bp.route("/api/drive/sync", methods=["POST"])
 def drive_sync():
     """Manual sync: download (default) or explicit upload."""
+    if not mode.drive_allowed():
+        return jsonify({"ok": False, "status": DEMO_STATUS,
+                        "mesaj": "Demo portfolio — Google Drive is off"})
     drive  = get_drive()
     if not drive.enabled:
         return jsonify({"ok": False, "mesaj": "Google Drive not configured (credentials.json missing)"})
     body   = request.get_json(silent=True) or {}
     action = body.get("action", "download")
     if action == "upload":
+        if not mode.uploads_allowed():
+            return jsonify({"ok": False, "status": drive.status(),
+                            "mesaj": "Upload blocked: sync from Drive first (no local copy of your portfolio)"})
         ok    = drive.upload()
         mesaj = "Data uploaded to Drive ✓" if ok else (drive.error or "Upload failed")
     else:
         ok    = drive.download()
+        if ok:
+            mode.block_uploads(False)
         mesaj = "Data synced from Drive ✓" if ok else (drive.error or "Download failed")
     return jsonify({"ok": ok, "status": drive.status(), "mesaj": mesaj})
 

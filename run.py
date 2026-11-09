@@ -28,10 +28,11 @@ def main():
 
     # Verify data file
     try:
-        from api.config import DATA_FILE, base_dir
+        from api.config import base_dir
+        from api.services import mode
         print(f"[INFO] Base dir: {base_dir()}")
-        print(f"[INFO] Data file: {DATA_FILE}")
-        print(f"[INFO] Data file exists: {os.path.exists(DATA_FILE)}")
+        print(f"[INFO] Real data file: {mode.real_file()} (exists: {os.path.exists(mode.real_file())})")
+        print(f"[INFO] Demo data file: {mode.demo_file()} (exists: {os.path.exists(mode.demo_file())})")
     except Exception as e:
         print(f"[WARN] Config check failed: {e}")
 
@@ -39,19 +40,8 @@ def main():
     print("║   Portfolio Manager  →  localhost:5000   ║")
     print("╚══════════════════════════════════════════╝\n")
 
-    def sync_on_startup():
-        time.sleep(2)
-        try:
-            from api.services.drive import get_drive
-            drive = get_drive()
-            if drive.enabled:
-                print("[Drive] Checking cloud data...")
-                ok = drive.download()
-                print("[Drive] Synced ✓" if ok else f"[Drive] Sync failed: {drive.error}")
-        except Exception as e:
-            print(f"[Drive] Error: {e}")
-
-    threading.Thread(target=sync_on_startup, daemon=True).start()
+    # Google Drive sync now happens when the user picks "My portfolio"
+    # in the startup window (see /api/mode), not automatically here.
 
     try:
         import webview
@@ -60,6 +50,8 @@ def main():
         t = threading.Thread(target=start_flask, daemon=True)
         t.start()
         time.sleep(1.2)
+        from api.services import windows
+        windows.enable("http://localhost:5000")
         webview.create_window("Portfolio Manager", "http://localhost:5000",
                               width=1280, height=800, resizable=True)
         webview.start()

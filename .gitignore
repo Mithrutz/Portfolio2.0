@@ -1,9 +1,13 @@
 portfolio_data.json
 token.json
 credentials.json
+stocks.db
+demo_data.json
 __pycache__/
 *.pyc
 dist/
 build/
 .env
 .DS_Store
+*.spec
+*.exe

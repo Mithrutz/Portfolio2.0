@@ -27,9 +27,13 @@ def create_app():
     from api.routes.data   import bp as data_bp
     from api.routes.prices import bp as prices_bp
     from api.routes.drive  import bp as drive_bp
+    from api.routes.stock  import bp as stock_bp
+    from api.routes.mode   import bp as mode_bp
     app.register_blueprint(data_bp)
     app.register_blueprint(prices_bp)
     app.register_blueprint(drive_bp)
+    app.register_blueprint(stock_bp)
+    app.register_blueprint(mode_bp)
 
     @app.route("/")
     def index():
